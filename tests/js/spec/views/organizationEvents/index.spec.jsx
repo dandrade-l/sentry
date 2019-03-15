@@ -58,11 +58,8 @@ describe('OrganizationEvents', function() {
       mockRouterPush(wrapper, router);
     });
 
-    it('renders', function() {
-      expect(wrapper.find('PageContent')).toHaveLength(1);
-    });
-
     it('updates router when changing environments', async function() {
+      expect(wrapper.find('PageContent')).toHaveLength(1);
       expect(wrapper.find('MultipleEnvironmentSelector').prop('value')).toEqual([]);
 
       wrapper.find('MultipleEnvironmentSelector HeaderItem').simulate('click');
@@ -81,7 +78,6 @@ describe('OrganizationEvents', function() {
         pathname: '/organizations/org-slug/events/',
         query: {
           environment: ['production'],
-          statsPeriod: '14d',
         },
       });
 
@@ -118,7 +114,6 @@ describe('OrganizationEvents', function() {
         pathname: '/organizations/org-slug/events/',
         query: {
           environment: ['production', 'staging'],
-          statsPeriod: '14d',
         },
       });
 
@@ -144,7 +139,6 @@ describe('OrganizationEvents', function() {
         pathname: '/organizations/org-slug/events/',
         query: {
           environment: [],
-          statsPeriod: '14d',
         },
       });
     });
@@ -166,7 +160,6 @@ describe('OrganizationEvents', function() {
         pathname: '/organizations/org-slug/events/',
         query: {
           project: [2],
-          statsPeriod: '14d',
         },
       });
       expect(wrapper.find('MultipleProjectSelector').prop('value')).toEqual([2]);
@@ -197,7 +190,6 @@ describe('OrganizationEvents', function() {
         pathname: '/organizations/org-slug/events/',
         query: {
           project: [2, 3],
-          statsPeriod: '14d',
         },
       });
     });
@@ -214,6 +206,7 @@ describe('OrganizationEvents', function() {
         .find('DayCell')
         .at(0)
         .simulate('mouseUp');
+      expect(wrapper.find('UtcPicker Checkbox').prop('checked')).toBe(true);
 
       wrapper.find('TimeRangeSelector StyledChevron').simulate('click');
 
@@ -225,13 +218,18 @@ describe('OrganizationEvents', function() {
         query: {
           start: '2017-10-01T00:00:00',
           end: '2017-10-01T23:59:59',
-          utc: 'true',
+          utc: true,
         },
       });
 
       expect(wrapper.find('TimeRangeSelector').prop('start')).toEqual(start);
       expect(wrapper.find('TimeRangeSelector').prop('end')).toEqual(end);
       expect(wrapper.find('TimeRangeSelector').prop('relative')).toEqual(null);
+      // Open menu and make sure UTC is checked
+      wrapper.find('TimeRangeSelector HeaderItem').simulate('click');
+      await tick();
+      wrapper.update();
+      expect(wrapper.find('UtcPicker Checkbox').prop('checked')).toBe(true);
     });
 
     it('does not update router when toggling environment selector without changes', async function() {
@@ -244,7 +242,6 @@ describe('OrganizationEvents', function() {
             ...router.location,
             query: {
               environment: ['production'],
-              statsPeriod: '14d',
               utc: 'true',
             },
           },
@@ -262,7 +259,7 @@ describe('OrganizationEvents', function() {
     it('updates router when changing periods', async function() {
       expect(wrapper.find('TimeRangeSelector').prop('start')).toEqual(null);
       expect(wrapper.find('TimeRangeSelector').prop('end')).toEqual(null);
-      expect(wrapper.find('TimeRangeSelector').prop('relative')).toEqual('14d');
+      expect(wrapper.find('TimeRangeSelector').prop('relative')).toEqual(null);
 
       wrapper.find('TimeRangeSelector HeaderItem').simulate('click');
 
@@ -281,7 +278,7 @@ describe('OrganizationEvents', function() {
         query: {
           end: '2017-10-16T22:41:20',
           start: '2017-10-02T22:41:20',
-          utc: 'true',
+          utc: true,
         },
       });
 
@@ -303,11 +300,13 @@ describe('OrganizationEvents', function() {
 
       expect(wrapper.find('TimeRangeSelector').prop('relative')).toEqual('7d');
 
+      // Note this is NOT called with utc true like the above because 1) it's a relative date
+      // and we do not need UTC value (which is default true in tests because timezone is set to UTC)
+      // and 2) we removed forcing a default value in url params so there is no explicit utc value
       expect(router.push).toHaveBeenCalledWith({
         pathname: '/organizations/org-slug/events/',
         query: {
           statsPeriod: '7d',
-          utc: 'true',
         },
       });
 
@@ -316,7 +315,6 @@ describe('OrganizationEvents', function() {
           end: null,
           start: null,
           relative: '7d',
-          utc: true,
         })
       );
     });
